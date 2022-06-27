@@ -1,0 +1,5 @@
+* Monkey
+My implementation of the Monkey programming language from [[https://interpreterbook.com/][Writing an Interpreter in Go]].
+
+** Todo
++ [ ] Extend lexer to support Unicode (and emojis)
