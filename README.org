@@ -1,5 +1,10 @@
 * Monkey
 My implementation of the Monkey programming language from [[https://interpreterbook.com/][Writing an Interpreter in Go]].
 
+Launch a REPL with
+#+begin_src sh
+go run main.go
+#+end_src
+
 ** Todo
-+ [ ] Extend lexer to support Unicode (and emojis)
+- [ ] Extend lexer to support Unicode (and emojis)

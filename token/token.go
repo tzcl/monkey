@@ -11,13 +11,19 @@ type Token struct {
 }
 
 const (
-	// Identifiers and literals
-	IDENT = "IDENT"
-	INT   = "INT"
-
 	// Operators
-	ASSIGN = "="
-	PLUS   = "+"
+	ASSIGN   = "="
+	PLUS     = "+"
+	MINUS    = "-"
+	BANG     = "!"
+	ASTERISK = "*"
+	SLASH    = "/"
+
+	LT = "<"
+	GT = ">"
+
+	EQ     = "=="
+	NOT_EQ = "!="
 
 	// Delimiters
 	COMMA     = ","
@@ -28,17 +34,31 @@ const (
 	LBRACE = "{"
 	RBRACE = "}"
 
+	// Identifiers and literals
+	IDENT = "IDENT"
+	INT   = "INT"
+
 	// Keywords
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
+	TRUE     = "TRUE"
+	FALSE    = "FALSE"
+	IF       = "IF"
+	ELSE     = "ELSE"
+	RETURN   = "RETURN"
 
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 )
 
 var keywords = map[string]TokenType{
-	"fn":  FUNCTION,
-	"let": LET,
+	"fn":     FUNCTION,
+	"let":    LET,
+	"true":   TRUE,
+	"false":  FALSE,
+	"if":     IF,
+	"else":   ELSE,
+	"return": RETURN,
 }
 
 func IdentType(ident string) TokenType {

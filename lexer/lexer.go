@@ -18,17 +18,6 @@ func New(input string) *Lexer {
 	return l
 }
 
-// TODO: only supports ASCII
-func (l *Lexer) readChar() {
-	if l.readPosition >= len(l.input) {
-		l.ch = 0 // ASCII for "NUL"
-	} else {
-		l.ch = l.input[l.readPosition]
-	}
-	l.position = l.readPosition
-	l.readPosition += 1
-}
-
 func (l *Lexer) NextToken() token.Token {
 	var t token.Token
 
@@ -36,21 +25,41 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		t = newToken(token.ASSIGN, l.ch)
-	case ';':
-		t = newToken(token.SEMICOLON, l.ch)
-	case '(':
-		t = newToken(token.LPAREN, l.ch)
-	case ')':
-		t = newToken(token.RPAREN, l.ch)
-	case ',':
-		t = newToken(token.COMMA, l.ch)
+		if l.peekChar() == '=' {
+			t = l.makeTwoCharToken(token.EQ)
+		} else {
+			t = l.makeToken(token.ASSIGN)
+		}
 	case '+':
-		t = newToken(token.PLUS, l.ch)
+		t = l.makeToken(token.PLUS)
+	case '-':
+		t = l.makeToken(token.MINUS)
+	case '!':
+		if l.peekChar() == '=' {
+			t = l.makeTwoCharToken(token.NOT_EQ)
+		} else {
+			t = l.makeToken(token.BANG)
+		}
+	case '*':
+		t = l.makeToken(token.ASTERISK)
+	case '/':
+		t = l.makeToken(token.SLASH)
+	case '<':
+		t = l.makeToken(token.LT)
+	case '>':
+		t = l.makeToken(token.GT)
+	case ',':
+		t = l.makeToken(token.COMMA)
+	case ';':
+		t = l.makeToken(token.SEMICOLON)
+	case '(':
+		t = l.makeToken(token.LPAREN)
+	case ')':
+		t = l.makeToken(token.RPAREN)
 	case '{':
-		t = newToken(token.LBRACE, l.ch)
+		t = l.makeToken(token.LBRACE)
 	case '}':
-		t = newToken(token.RBRACE, l.ch)
+		t = l.makeToken(token.RBRACE)
 	case 0:
 		t.Literal = ""
 		t.Type = token.EOF
@@ -64,7 +73,7 @@ func (l *Lexer) NextToken() token.Token {
 			t.Type = token.INT
 			return t
 		} else {
-			t = newToken(token.ILLEGAL, l.ch)
+			t = l.makeToken(token.ILLEGAL)
 		}
 	}
 
@@ -72,8 +81,44 @@ func (l *Lexer) NextToken() token.Token {
 	return t
 }
 
+// TODO: I feel like regex would be cleaner?
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+// TODO: only supports ASCII
+func (l *Lexer) readChar() {
+	if l.readPosition >= len(l.input) {
+		l.ch = 0 // ASCII for "NUL"
+	} else {
+		l.ch = l.input[l.readPosition]
+	}
+	l.position = l.readPosition
+	l.readPosition += 1
+}
+
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
+}
+
+func (l *Lexer) makeToken(tokenType token.TokenType) token.Token {
+	return token.Token{Type: tokenType, Literal: string(l.ch)}
+}
+
+func (l *Lexer) makeTwoCharToken(tokenType token.TokenType) token.Token {
+	ch := l.ch
+	l.readChar()
+	return token.Token{Type: tokenType, Literal: string(ch) + string(l.ch)}
+}
+
 // readIdentifier reads the input until it reaches a non-letter character
-// Can generalise these functions
+// TODO: generalise these functions (pass read a predicate)
 func (l *Lexer) readIdentifier() string {
 	position := l.position
 	for isLetter(l.ch) {
@@ -90,21 +135,10 @@ func (l *Lexer) readNumber() string {
 	return l.input[position:l.position]
 }
 
-// TODO: I feel like regex would be cleaner?
-func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
-		l.readChar()
-	}
-}
-
 func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
 
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
-}
-
-func newToken(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
 }
