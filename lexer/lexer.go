@@ -1,20 +1,23 @@
 // Package lexer implements a lexer for Monkey.
 package lexer
 
-import "github.com/tzcl/monkey/token"
+import (
+	"github.com/dmolesUC3/emoji"
+	"github.com/tzcl/monkey/token"
+	"unicode"
+	"unicode/utf8"
+)
 
 type Lexer struct {
 	input        string
 	position     int  // points to current char
 	readPosition int  // points after current char (allows us to peek)
-	ch           byte // current char being processed
-	// ch should be a rune to support Unicode
-	// TODO: support this! Should be able to use Unicode and emojis
+	r            rune // current rune being processed
 }
 
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
-	l.readChar()
+	l.readRune()
 	return l
 }
 
@@ -23,10 +26,10 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.skipWhitespace()
 
-	switch l.ch {
+	switch l.r {
 	case '=':
-		if l.peekChar() == '=' {
-			t = l.makeTwoCharToken(token.EQ)
+		if l.peekRune() == '=' {
+			t = l.makeTwoRuneToken(token.EQ)
 		} else {
 			t = l.makeToken(token.ASSIGN)
 		}
@@ -35,8 +38,8 @@ func (l *Lexer) NextToken() token.Token {
 	case '-':
 		t = l.makeToken(token.MINUS)
 	case '!':
-		if l.peekChar() == '=' {
-			t = l.makeTwoCharToken(token.NOT_EQ)
+		if l.peekRune() == '=' {
+			t = l.makeTwoRuneToken(token.NOT_EQ)
 		} else {
 			t = l.makeToken(token.BANG)
 		}
@@ -64,11 +67,11 @@ func (l *Lexer) NextToken() token.Token {
 		t.Literal = ""
 		t.Type = token.EOF
 	default:
-		if isLetter(l.ch) {
+		if unicode.IsLetter(l.r) || isEmoji(l.r) {
 			t.Literal = l.readIdentifier()
 			t.Type = token.IdentType(t.Literal)
 			return t
-		} else if isDigit(l.ch) {
+		} else if unicode.IsDigit(l.r) {
 			t.Literal = l.readNumber()
 			t.Type = token.INT
 			return t
@@ -77,68 +80,68 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	}
 
-	l.readChar()
+	l.readRune()
 	return t
 }
 
-// TODO: I feel like regex would be cleaner?
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
-		l.readChar()
+	for unicode.IsSpace(l.r) {
+		l.readRune()
 	}
 }
 
-// TODO: only supports ASCII
-func (l *Lexer) readChar() {
+func (l *Lexer) readRune() {
+	size := 1
 	if l.readPosition >= len(l.input) {
-		l.ch = 0 // ASCII for "NUL"
+		l.r = 0 // represents "NUL"
 	} else {
-		l.ch = l.input[l.readPosition]
+		l.r, size = utf8.DecodeRuneInString(l.input[l.readPosition:])
 	}
 	l.position = l.readPosition
-	l.readPosition += 1
+	l.readPosition += size
 }
 
-func (l *Lexer) peekChar() byte {
+func (l *Lexer) peekRune() rune {
 	if l.readPosition >= len(l.input) {
 		return 0
 	} else {
-		return l.input[l.readPosition]
+		r, _ := utf8.DecodeRuneInString(l.input[l.readPosition:])
+		return r
 	}
 }
 
 func (l *Lexer) makeToken(tokenType token.TokenType) token.Token {
-	return token.Token{Type: tokenType, Literal: string(l.ch)}
+	return token.Token{Type: tokenType, Literal: string(l.r)}
 }
 
-func (l *Lexer) makeTwoCharToken(tokenType token.TokenType) token.Token {
-	ch := l.ch
-	l.readChar()
-	return token.Token{Type: tokenType, Literal: string(ch) + string(l.ch)}
+func (l *Lexer) makeTwoRuneToken(tokenType token.TokenType) token.Token {
+	r := l.r
+	l.readRune()
+	return token.Token{Type: tokenType, Literal: string(r) + string(l.r)}
 }
 
 // readIdentifier reads the input until it reaches a non-letter character
 // TODO: generalise these functions (pass read a predicate)
 func (l *Lexer) readIdentifier() string {
 	position := l.position
-	for isLetter(l.ch) {
-		l.readChar()
+	for unicode.IsLetter(l.r) || isEmoji(l.r) {
+		l.readRune()
 	}
 	return l.input[position:l.position]
 }
 
 func (l *Lexer) readNumber() string {
 	position := l.position
-	for isDigit(l.ch) {
-		l.readChar()
+	for unicode.IsDigit(l.r) {
+		l.readRune()
 	}
 	return l.input[position:l.position]
 }
 
-func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
-}
-
-func isDigit(ch byte) bool {
-	return '0' <= ch && ch <= '9'
+func isEmoji(r rune) bool {
+	// NOTE: need to manually check for digits (they are considered emojis)
+	if unicode.IsDigit(r) {
+		return false
+	}
+	return emoji.IsEmoji(r)
 }

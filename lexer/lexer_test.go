@@ -123,3 +123,59 @@ if (5 < 10) {
 		}
 	}
 }
+
+func TestUnicode(t *testing.T) {
+	input := `let add = fn(🐈, 🐕) {
+🐈 + 🐕;
+};
+let 🙋 = add(5, 10);
+`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.LET, "let"},
+		{token.IDENT, "add"},
+		{token.ASSIGN, "="},
+		{token.FUNCTION, "fn"},
+		{token.LPAREN, "("},
+		{token.IDENT, "🐈"},
+		{token.COMMA, ","},
+		{token.IDENT, "🐕"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.IDENT, "🐈"},
+		{token.PLUS, "+"},
+		{token.IDENT, "🐕"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENT, "🙋"},
+		{token.ASSIGN, "="},
+		{token.IDENT, "add"},
+		{token.LPAREN, "("},
+		{token.INT, "5"},
+		{token.COMMA, ","},
+		{token.INT, "10"},
+		{token.RPAREN, ")"},
+		{token.SEMICOLON, ";"},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q (%+v)",
+				i, tt.expectedType, tok.Type, tok)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
+				i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}
