@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/tzcl/monkey/evaluator"
 	"github.com/tzcl/monkey/lexer"
+	"github.com/tzcl/monkey/object"
 	"github.com/tzcl/monkey/parser"
 )
 
@@ -13,6 +15,7 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(PROMPT)
@@ -31,8 +34,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		evaled := evaluator.Eval(program, env)
+		if evaled != nil {
+			io.WriteString(out, evaled.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
