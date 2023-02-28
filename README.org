@@ -7,4 +7,5 @@ go run main.go
 #+end_src
 
 ** Todo
-- [ ] Extend lexer to support Unicode (and emojis)
+- [x] Extend lexer to support Unicode (and emojis)
+- [ ] Implement bytecode VM
