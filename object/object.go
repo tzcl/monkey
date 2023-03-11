@@ -17,6 +17,7 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERR_OBJ          = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
+	QUOTE_OBJ        = "QUOTE"
 )
 
 type Object interface {
@@ -80,4 +81,13 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n}")
 
 	return out.String()
+}
+
+type Quote struct {
+	Node ast.Node
+}
+
+func (q *Quote) Type() ObjectType { return QUOTE_OBJ }
+func (q *Quote) Inspect() string {
+	return "QUOTE(" + q.Node.String() + ")"
 }
