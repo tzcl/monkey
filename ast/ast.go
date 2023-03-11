@@ -2,8 +2,9 @@ package ast
 
 import (
 	"bytes"
-	"github.com/tzcl/monkey/token"
 	"strings"
+
+	"github.com/tzcl/monkey/token"
 )
 
 type Node interface {
@@ -249,4 +250,39 @@ func (ce *CallExpression) String() string {
 	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
 	return out.String()
+}
+
+type ModifierFunc func(Node) Node
+
+func Modify(node Node, modifier ModifierFunc) Node {
+	switch node := node.(type) {
+	case *Program:
+		for i, statement := range node.Statements {
+			node.Statements[i], _ = Modify(statement, modifier).(Statement)
+		}
+
+	case *ExpressionStatement:
+		node.Expression, _ = Modify(node.Expression, modifier).(Expression)
+
+	case *InfixExpression:
+		node.Left, _ = Modify(node.Left, modifier).(Expression)
+		node.Right, _ = Modify(node.Right, modifier).(Expression)
+
+	case *PrefixExpression:
+		node.Right, _ = Modify(node.Right, modifier).(Expression)
+
+	case *IfExpression:
+		node.Condition, _ = Modify(node.Condition, modifier).(Expression)
+		node.Consequence, _ = Modify(node.Consequence, modifier).(*BlockStatement)
+		if node.Alternative != nil {
+			node.Alternative, _ = Modify(node.Alternative, modifier).(*BlockStatement)
+		}
+
+	case *BlockStatement:
+		for i := range node.Statements {
+			node.Statements[i], _ = Modify(node.Statements[i], modifier).(Statement)
+		}
+	}
+
+	return modifier(node)
 }
