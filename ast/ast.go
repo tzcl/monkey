@@ -252,6 +252,31 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+type MacroLiteral struct {
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (ml *MacroLiteral) expressionNode()      {}
+func (ml *MacroLiteral) TokenLiteral() string { return ml.Token.Literal }
+func (ml *MacroLiteral) String() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range ml.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString(ml.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") ")
+	out.WriteString(ml.Body.String())
+
+	return out.String()
+}
+
 type ModifierFunc func(Node) Node
 
 func Modify(node Node, modifier ModifierFunc) Node {
@@ -282,6 +307,18 @@ func Modify(node Node, modifier ModifierFunc) Node {
 		for i := range node.Statements {
 			node.Statements[i], _ = Modify(node.Statements[i], modifier).(Statement)
 		}
+
+	case *ReturnStatement:
+		node.ReturnValue, _ = Modify(node.ReturnValue, modifier).(Expression)
+
+	case *LetStatement:
+		node.Value, _ = Modify(node.Value, modifier).(Expression)
+
+	case *FunctionLiteral:
+		for i := range node.Parameters {
+			node.Parameters[i], _ = Modify(node.Parameters[i], modifier).(*Identifier)
+		}
+		node.Body, _ = Modify(node.Body, modifier).(*BlockStatement)
 	}
 
 	return modifier(node)
